@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style type="text/css">
+    .tableformat table, th, td {
+   border: 1px solid black;
+}
+  </style>
+<style>
+
+
+body {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  position: relative;
+  width: 960px;
+}
+
+.axis text {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.bar {
+  fill: steelblue;
+  fill-opacity: .9;
+}
+
+.x.axis path {
+  display: none;
+}
+
+
+.d3-tip {
+  line-height: 1;
+  font-weight: bold;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  border-radius: 2px;
+}
+
+/* Creates a small triangle extender for the tooltip */
+.d3-tip:after {
+  box-sizing: border-box;
+  display: inline;
+  font-size: 10px;
+  width: 100%;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.8);
+  content: "\25BC";
+  position: absolute;
+  text-align: center;
+}
+
+/* Style northward tooltips differently */
+.d3-tip.n:after {
+  margin: -1px 0 0 0;
+  top: 100%;
+  left: 0;
+}
+
+</style>
+<label hidden><input type="checkbox" hidden> Sort values</label>
+<script src="jquery-1.9.1.min.js"></script>
+
+<script src="//d3js.org/d3.v3.min.js"></script>
+<script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+
+<body>
+  <div id="area1"></div>
+<div id="area2"></div>
+<div id="tableformat"></div>
+</body>
+<script>
+var csvFile;
+  var csvStr;
+var parseQueryString = function() {
+
+    var str = window.location.search;
+    var objURL = {};
+
+    str.replace(
+        new RegExp( "([^?=&]+)(=([^&]*))?", "g" ),
+        function( $0, $1, $2, $3 ){
+            objURL[ $1 ] = $3;
+        }
+    );
+    return objURL;
+};
+var csvFile = parseQueryString()["data"]+".csv";
+
+
+$(function(){
+
+ var html = "<table><tr><th>Rank</th><th>Stream Creator</th><th>Stream Creator Search</th><th>Total Calls</th></tr>";
+d3.csv(csvFile, function(error, data) {
+
+  data.sort(function(a,b) {return b.alltime-a.alltime;});
+console.log(data);
+var rank = 1;
+  data.forEach(function(d) {
+
+      html+="<tr><td>"+rank+"</td><td>"+d.name+"</td><td>"+d.streamCreatorSearch+"</td><td>"+d.alltime+"</td></tr>";
+
+
+      rank+=1;
+
+
+  });
+  html+="</table>"
+   document.getElementById("tableformat").innerHTML = html;
+   });
+});
+
+
+
+var margin = {top: 20, right: 20, bottom: 30, left: 40},
+    width = 1024 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+var formatPercent = d3.format("s");
+
+var x = d3.scale.ordinal()
+    .rangeRoundBands([0, width], .1);
+
+var y = d3.scale.linear()
+    .range([height, 0]);
+
+var xAxis = d3.svg.axis()
+    .orient("bottom");
+
+var yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left")
+    .tickFormat(formatPercent);
+
+    var tip = d3.tip()
+  .attr('class', 'd3-tip')
+  .offset([-10, 0])
+  .html(function(d) {
+    return "<strong>Creator "+d.name+" :</strong> <span style='color:red'> "+ d.alltime + "</span>";
+  })
+
+var svg = d3.select("#area1").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+svg.call(tip);
+
+d3.csv(csvFile, function(error, data) {
+
+  data.forEach(function(d) {
+    d.alltime = +d.alltime;
+  });
+
+  x.domain(data.map(function(d) { return d.name; }));
+  y.domain([0, d3.max(data, function(d) { return d.alltime; })]);
+
+  svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis);
+
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+    .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .text("Calls");
+
+  svg.selectAll(".bar")
+      .data(data)
+    .enter().append("rect")
+      .attr("class", "bar")
+      .attr("x", function(d) { return x(d.name); })
+      .attr("width", x.rangeBand())
+      .attr("y", function(d) { return y(d.alltime); })
+      .attr("height", function(d) { return Math.abs(height - y(d.alltime)); })
+      .on('mouseover', tip.show)
+      .on('mouseout', tip.hide)
+      ;
+
+  d3.select("input").on("change", change);
+
+  var sortTimeout = setTimeout(function() {
+    d3.select("input").property("checked", true).each(change);
+  }, 2000);
+
+  function change() {
+    clearTimeout(sortTimeout);
+
+    // Copy-on-write since tweens are evaluated after a delay.
+    var x0 = x.domain(data.sort(this.checked
+        ? function(a, b) { return b.alltime - a.alltime; }
+        : function(a, b) { return b.name - a.name; })
+        .map(function(d) { return d.name; }))
+        .copy();
+
+    svg.selectAll(".bar")
+        .sort(function(a, b) { return x0(a.name) - x0(b.name); });
+
+    var transition = svg.transition().duration(100),
+        delay = function(d, i) { return i * 10; };
+
+    transition.selectAll(".bar")
+        .delay(delay)
+        .attr("x", function(d) { return x0(d.name); });
+
+    transition.select(".x.axis")
+        .call(xAxis)
+      .selectAll("g")
+        .delay(delay);
+  }
+});
+
+
+</script>

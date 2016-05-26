@@ -1,0 +1,188 @@
+
+
+
+
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style type="text/css">
+
+.tableformat table, th, td {
+   border: 1px solid black;
+}
+
+table {
+  border-collapse: collapse;
+  font: 10px sans-serif;
+  width: 720px;
+}
+
+th {
+  font-weight: normal;
+  text-align: right;
+  padding-right: 6px;
+  min-width: 43px;
+}
+
+thead td {
+  cursor: s-resize;
+}
+
+tbody tr:first-child td {
+  padding-top: 2px;
+}
+
+tbody td {
+  padding: 0;
+  border-left: solid 1px #000;
+}
+
+tbody rect {
+  fill: steelblue;
+}
+
+tbody tr:hover rect {
+  fill: brown;
+}
+
+.d3-tip {
+  line-height: 1;
+  font-weight: bold;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  border-radius: 2px;
+}
+
+/* Creates a small triangle extender for the tooltip */
+.d3-tip:after {
+  box-sizing: border-box;
+  display: inline;
+  font-size: 10px;
+  width: 100%;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.8);
+  content: "\25BC";
+  position: absolute;
+  text-align: center;
+}
+
+/* Style northward tooltips differently */
+.d3-tip.n:after {
+  margin: -1px 0 0 0;
+  top: 100%;
+  left: 0;
+}
+</style>
+
+<table>
+  <thead>
+    <tr>
+      <th>Time</th>
+      <td>Seconds</td>
+      <td>Minutes</td>
+      <td>Hours</td>
+      
+    </tr>
+  </thead>
+  <tbody>
+  </tbody>
+</table>
+
+<div id="tableformat" style="padding-top:200px">
+</div>
+<script src="//d3js.org/d3.v3.min.js"></script>
+<script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+<script type="text/javascript">
+  var csvFile;
+  var csvStr;
+  var parseQueryString = function() {
+
+    var str = window.location.search;
+    var objURL = {};
+
+    str.replace(
+        new RegExp( "([^?=&]+)(=([^&]*))?", "g" ),
+        function( $0, $1, $2, $3 ){
+            objURL[ $1 ] = $3;
+        }
+    );
+    return objURL;
+};
+ csvFile = parseQueryString()["data"]+".csv";
+var data1 = [];
+var data2 = [];
+var data3 = [];
+ csvStr="name,seconds,minutes,hours,total\n";
+ var html = "<table><tr><th>Name</th><th>Seconds</th></tr>";
+d3.csv(csvFile, function(error, data) {
+console.log(data);
+  data.forEach(function(d) {
+
+    if(!isNaN(d.streamlength)){
+      html+="<tr><td>"+d.name+"</td><td>"+d.streamlength+"</td></tr>";
+      var total = parseInt(d.streamlength)+parseInt(d.streamlength/60)+parseInt(d.streamlength/3600);
+      csvStr+=d.name+","+d.streamlength+","+(d.streamlength/60)+","+(d.streamlength/3600)+","+total+"\n";
+
+    //data1.push(d.streamlength );
+   // name1[d.streamlength]=d.name;
+  //  data2.push(""+d.streamlength/60);
+    //    name1[d.streamlength/60]=d.name;
+
+    //data3.push(""+d.streamlength/3600);
+      //  name1[d.streamlength/3600]=d.name;
+}
+  });
+  html+="</table>"
+   document.getElementById("tableformat").innerHTML = html;
+
+  //console.log(csvStr);
+    states=[];
+d3.csv.parse(csvStr, function(data, error) {
+
+
+states.push(data);
+});
+  
+
+  //console.log(states);
+
+ // if (error) throw error;
+
+  var ages = d3.keys(states[0]).filter(function(key) {
+    return key != "name" && key != "total";
+  });
+
+ var tip = d3.tip()
+  .attr('class', 'd3-tip')
+  .offset([-10, 0])
+  .html(function(k) {
+    return "<span style='color:red'> "+(parseFloat(k *60*71))+ "</span>";
+  });
+  d3.selectAll("thead td").data(ages).on("click", function(k) {
+    tr.sort(function(a, b) { return (b[k] ) - (a[k] ); });
+  });
+
+  var tr = d3.select("tbody").selectAll("tr")
+      .data(states)
+    .enter().append("tr");
+
+  tr.append("th")
+      .text(function(d) { return d.name; });
+
+  var svg = tr.selectAll("td")
+     .data(function(d) { return ages.map(function(k) {var newd =d[k];if(k=="seconds"){ newd = d[k] /3600} if(k=="minutes"){ newd = d[k] /60}  return newd;}); })
+    .enter().append("td").append("svg")
+    .attr("width", "100%")
+      .attr("height", 12)
+    .append("rect")
+      .attr("height", 12)
+      .attr("width", function(d) { return d * 71; })
+      .on('mouseover', tip.show)
+      .on('mouseout', tip.hide);
+      svg.call(tip);
+ 
+
+});
+
+
+</script>
