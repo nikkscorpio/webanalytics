@@ -14,15 +14,14 @@ app.use(busboy());
 var AWS = require('aws-sdk');
 S3S = require('s3-streams');
 AWS.config.update({
-    accessKeyId: 'AKIAIU5XDJTJL3FLN25Q',
-    secretAccessKey: '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'
-});
+    accessKeyId: '',
+    secretAccessKey: ''
 AWS.config.update({
     region: 'us-west-2'
 });
 s3 = new AWS.S3({
-    accessKeyId: 'AKIAIU5XDJTJL3FLN25Q',
-    secretAccessKey: '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',
+    accessKeyId: '',
+    secretAccessKey: '',
     region: 'us-west-2'
 });
 
